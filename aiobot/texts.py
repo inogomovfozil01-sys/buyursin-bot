@@ -55,9 +55,9 @@ TEXTS = {
         "en": "Enter the product name and a short description (e.g., “Zara jacket, men’s, black, in good condition”). Mention the brand, color, and features — it will help sell faster."
     },
     "ad_price": {
-        "ru": "Введите цену товара.\n\nПримеры: 100000 som, 200$, 100k, 100к",
-        "uz": "Mahsulot narxini kiriting.\n\nMisollar: 100000 som, 200$, 100k, 100к",
-        "en": "Enter the product price.\n\nExamples: 100000 som, 200$, 100k, 100к"
+        "ru": "💰 Введите цену товара в сумах.\n\nПримеры: `150000`, `100k` или `100к`",
+        "uz": "💰 Mahsulot narxini so'mda kiriting.\n\nMisollar: `150000`, `100k` yoki `100к`",
+        "en": "💰 Enter the price in UZS.\n\nExamples: `150000`, `100k` or `100к`"
     },
     "ad_size": {
         # "ru": "Введите размер (кв.м, литры и т.п.):",
@@ -172,6 +172,8 @@ TEXTS = {
         "uz": "Nuqsonlar",
         "en": "Defects"
     },
+    "field_category": {"ru": "Категория", "uz": "Kategoriya", "en": "Category"},
+    "add_ad_cancelled": {"ru": "Отменено", "uz": "Bekor qilindi", "en": "Cancelled"},
     "ad_defect": {
         "ru": "Выберите состояние товара (дефекты):",
         "uz": "Mahsulot holatini tanlang (nuqsonlar):",
@@ -181,5 +183,15 @@ TEXTS = {
         "ru": ["Есть пятна", "Есть брак", "Нет дефектов"],
         "uz": ["Dog‘ bor", "Nuqson bor", "Defekt yo‘q"],
         "en": ["Stains", "Defect", "No defects"]
+    },
+     "confirm_header": {
+        "ru": "📋 **ПРОВЕРКА ОБЪЯВЛЕНИЯ**",
+        "uz": "📋 **E'LONNI TEKSHIRISH**",
+        "en": "📋 **AD PREVIEW**"
+    },
+    "confirm_msg": {
+        "ru": "Всё верно? Опубликовать?",
+        "uz": "Hammasi to'g'rimi? Chop etilsinmi?",
+        "en": "Is everything correct? Publish?"
     }
 } 

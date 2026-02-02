@@ -12,11 +12,11 @@ import threading
 import os
 from datetime import datetime
 import sys
-import sentry_sdk
+# import sentry_sdk
 from config import sentry_dsn
 
 
-sentry_sdk.init(dsn=sentry_dsn)
+# sentry_sdk.init(dsn=sentry_dsn)
 logging.basicConfig(level=logging.INFO)
 
 load_dotenv()
@@ -27,7 +27,7 @@ def check_single_instance():
     
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.bind(('localhost', 8081))  # Порт для проверки
+        sock.bind(('localhost', 8081))
         print("[INFO] Бот запущен в единственном экземпляре")
         return True
     except OSError:
@@ -66,4 +66,6 @@ async def main():
 
 
 if __name__ == '__main__':
+    from config import Config
+    print('Config DB Config:', Config.DB_CONFIG)
     asyncio.run(main())

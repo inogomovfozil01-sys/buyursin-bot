@@ -14,7 +14,6 @@ router = Router()
 LANGS = {"🇷🇺 Русский": "ru", "🇺🇿 O‘zbekcha": "uz", "🇬🇧 English": "en"}
 
 
-# --- START ---
 @router.message(Command("start"))
 async def cmd_start(message: Message, state: FSMContext):
     await state.clear()
@@ -29,7 +28,6 @@ async def cmd_start(message: Message, state: FSMContext):
         await state.set_state(Register.language)
 
 
-# --- CHANGE LANGUAGE (/lang) ---
 @router.message(Command("lang"))
 async def change_lang(message: Message, state: FSMContext):
     await state.clear()
@@ -42,7 +40,6 @@ async def change_lang(message: Message, state: FSMContext):
     await state.set_state(Register.language)
 
 
-# --- LANGUAGE SELECT ---
 @router.message(StateFilter(Register.language), F.text.in_(LANGS.keys()))
 async def register_choose_lang(message: Message, state: FSMContext):
     logging.info(f"register_choose_lang: user_id={message.from_user.id}, text={message.text}")
@@ -59,13 +56,11 @@ async def register_choose_lang(message: Message, state: FSMContext):
         await state.set_state(Register.phone)
 
 
-# ❌ INVALID LANGUAGE
 @router.message(StateFilter(Register.language))
 async def invalid_language(message: Message, state: FSMContext):
     await message.answer(TEXTS["invalid_lang"]["ru"], reply_markup=lang_keyboard())
 
 
-# --- PHONE ---
 @router.message(StateFilter(Register.phone), F.contact)
 async def register_phone(message: Message, state: FSMContext):
     logging.info(f"register_phone: user_id={message.from_user.id}, contact={message.contact}")
@@ -87,7 +82,6 @@ async def register_phone(message: Message, state: FSMContext):
     await state.clear()
 
 
-# ❌ INVALID PHONE
 @router.message(StateFilter(Register.phone))
 async def invalid_phone(message: Message, state: FSMContext):
     data = await state.get_data()

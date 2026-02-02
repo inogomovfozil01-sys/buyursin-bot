@@ -13,12 +13,12 @@ class AuthMiddleware(BaseMiddleware):
                        event: Message,
                        data: Dict[str, Any]) -> Any:
         user_id = event.from_user.id
-        user = Users.get(user_id=user_id)
+        user = await Users.get(user_id=user_id)
 
 
         if not user:
             await event.answer("❌ Вы не авторизованы. Используйте /start для входа.")
-            return  # прерываем цепочку
+            return
         return await handler(event, data)
 
 router.message.middleware(AuthMiddleware())

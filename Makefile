@@ -1,27 +1,28 @@
-# Makefile
+.PHONY: dev prod stop restart update logs shell
 
-.PHONY: build up up-d logs down shell
+dev:
+	docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 
-# Сборка образа бота
-build:
-	docker compose build
+prod:
+	docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
-# Запуск в интерактивном режиме (для отладки)
-up: build
-	docker compose up
+stop:
+	docker compose stop
 
-# Запуск в фоновом режиме
-up-d: build
-	docker compose up -d
+start:
+	docker compose start
 
-# Просмотр логов
+restart:
+	docker compose restart bot
+
+update:
+	docker compose up -d --build bot
+
 logs:
-	docker compose logs -f
+	docker compose logs -f bot
 
-# Остановка и удаление контейнеров
 down:
 	docker compose down
-	
-# Запуск bash внутри контейнера бота
+
 shell:
 	docker compose exec bot bash

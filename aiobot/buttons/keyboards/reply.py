@@ -1,7 +1,6 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiobot.texts import TEXTS
 
-# Главная клавиатура
 
 def main_keyboard(lang):
     btn = {
@@ -14,7 +13,6 @@ def main_keyboard(lang):
         resize_keyboard=True
     )
 
-# Клавиатура выбора языка
 
 def lang_keyboard():
     return ReplyKeyboardMarkup(
@@ -22,7 +20,6 @@ def lang_keyboard():
         resize_keyboard=True
     )
 
-# Клавиатура для отправки телефона
 
 def phone_keyboard(lang):
     return ReplyKeyboardMarkup(
@@ -32,7 +29,6 @@ def phone_keyboard(lang):
 
 
 def size_category_keyboard(lang: str = "ru"):
-    # fallback если язык неизвестен
     if lang not in ["ru", "uz", "en"]:
         lang = "ru"
 
@@ -53,7 +49,6 @@ def clothing_size_keyboard():
     return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)
 
 
-# Клавиатура размеров обуви
 def shoes_size_keyboard():
     buttons = [
         [KeyboardButton(text="36"), KeyboardButton(text="37"), KeyboardButton(text="38")],
@@ -64,7 +59,6 @@ def shoes_size_keyboard():
     return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)
 
 
-# Клавиатура состояния
 def condition_keyboard(lang: str):
     items = TEXTS["conditions"].get(lang, TEXTS["conditions"]["ru"])
     buttons = [
@@ -74,7 +68,6 @@ def condition_keyboard(lang: str):
     ]
     return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)
 
-# Клавиатура подтверждения
 
 def confirm_keyboard(lang):
     btns = {
@@ -87,6 +80,7 @@ def confirm_keyboard(lang):
         resize_keyboard=True
     )
 
+
 def photos_keyboard(lang: str):
     button_text = TEXTS["photos_done"].get(lang, TEXTS["photos_done"]["ru"])
     return ReplyKeyboardMarkup(
@@ -94,7 +88,6 @@ def photos_keyboard(lang: str):
         resize_keyboard=True
     )
     
-
 
 def defect_keyboard(lang: str) -> ReplyKeyboardMarkup:
     buttons = [KeyboardButton(text=t) for t in TEXTS["defects"][lang]]

@@ -1,4 +1,4 @@
-from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
+from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton
 
 
 def main_kb() -> ReplyKeyboardMarkup:
@@ -12,7 +12,6 @@ def main_kb() -> ReplyKeyboardMarkup:
     )
 
     return keyboard
-
 
 def contact_kb() -> ReplyKeyboardMarkup:
     kb_list = [

@@ -31,6 +31,7 @@ class Users(Base):
             await session.refresh(user)
         return user
 
+
     @classmethod
     async def get(cls, user_id):
         async for session in db.get_session():
@@ -38,12 +39,14 @@ class Users(Base):
             result = await session.execute(query)
             return result.scalar_one_or_none()
 
+
     @classmethod
     async def get_all(cls):
         async for session in db.get_session():
             query = select(cls)
             result = await session.execute(query)
             return result.scalars().all()
+
 
     @classmethod
     async def update(cls, user_id, **kwargs):
@@ -57,6 +60,7 @@ class Users(Base):
             await session.execute(query)
             await session.commit()
 
+
     @classmethod
     async def delete(cls, user_id):
         async for session in db.get_session():
@@ -64,6 +68,7 @@ class Users(Base):
             await session.execute(query)
             await session.commit()
         return True
+
 
     @classmethod
     async def get_language(cls, user_id):

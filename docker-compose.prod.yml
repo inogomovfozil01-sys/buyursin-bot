@@ -1,0 +1,7 @@
+services:
+  bot:
+    command: python main.py
+    restart: always
+    
+  db:
+    restart: always

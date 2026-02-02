@@ -1,6 +1,5 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-# Пример: админская инлайн-клавиатура для подтверждения/отклонения объявления
 
 def admin_inline_keyboard(pk):
     return InlineKeyboardMarkup(
@@ -11,8 +10,6 @@ def admin_inline_keyboard(pk):
             ]
         ]
     ) 
-    
-    
 
 def user_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
     texts = {

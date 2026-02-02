@@ -7,11 +7,11 @@ from aiobot.database import Base, db
 
 class Ads(Base):
     __tablename__ = "ads"
-
     user_id = Column(BigInteger, ForeignKey('users.user_id'))
     title = Column(String)
     price = Column(Float)
     size = Column(String)
+    category = Column(String, nullable=True)
     condition = Column(String)
     defect_info = Column(String, nullable=True)
     photos = Column(String)
@@ -20,13 +20,15 @@ class Ads(Base):
     created_at = Column(DateTime, default=datetime.now)
 
     @classmethod
-    async def create(cls, user_id, title, price, size, condition, photos, status='pending'):
+    async def create(cls, user_id, title, price, size, category, condition, defect_info, photos, status='pending'):
         ad = cls(
             user_id=user_id,
             title=title,
             price=price,
             size=size,
+            category=category,
             condition=condition,
+            defect_info=defect_info,
             photos=photos,
             status=status
         )

@@ -84,13 +84,13 @@ class AsyncDatabaseSession:
     async def init(self):
         self._engine = create_async_engine(
             Config.DB_CONFIG,
-            echo=False,               # можно включить True для отладки
+            echo=False,               
             future=True,
-            pool_pre_ping=True,       # проверяет соединение перед использованием
-            pool_size=10,             # размер пула соединений
-            max_overflow=20,          # доп. соединения при пиках нагрузки
-            pool_recycle=1800,        # переподключение каждые 30 минут
-            pool_timeout=30,          # ожидание при нехватке соединений
+            pool_pre_ping=True,       
+            pool_size=10,             
+            max_overflow=20,           
+            pool_recycle=1800,        
+            pool_timeout=30,          
         )
         self._sessionmaker = sessionmaker(
             self._engine, expire_on_commit=False, class_=AsyncSession
