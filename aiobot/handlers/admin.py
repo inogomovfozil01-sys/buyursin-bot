@@ -10,28 +10,28 @@ router = Router()
 
 def get_bilingual_condition(condition: str) -> str:
     """
-    Распознает кнопки со скриншота и выдает двуязычный текст.
+    Распознает кнопки на RU, UZ, EN и выдает двуязычный текст для канала.
     """
     c = condition.lower()
     
-    # 🆕 Новый
-    if "новый" in c and "почти" not in c:
+    # 1. Новый / Yangi / New
+    if ("yangi" in c or "new" in c or "новый" in c) and not any(x in c for x in ["почти", "deyarli", "almost"]):
         return "новое/yangi"
     
-    # ✨ Почти новый
-    if "почти новый" in c or "ideal" in c:
+    # 2. Почти новый / Deyarli yangi / Almost new
+    if any(x in c for x in ["почти", "deyarli", "almost"]) or "ideal" in c:
         return "идеальное/ideal"
     
-    # 👍 Хорошее
-    if "хорошее" in c or "yaxshi" in c:
+    # 3. Хорошее / Yaxshi / Good
+    if any(x in c for x in ["хорошее", "yaxshi", "good"]):
         return "хорошее/yaxshi"
     
-    # 👌 Среднее
-    if "среднее" in c or "o'rtacha" in c:
+    # 4. Среднее / O'rtacha / Fair
+    if any(x in c for x in ["среднее", "o'rtacha", "fair"]):
         return "среднее/o'rtacha"
     
-    # 🔧 Требует ремонта
-    if "ремонта" in c or "ta'mir" in c:
+    # 5. Требует ремонта / Ta'mirlash kerak / Needs repair
+    if any(x in c for x in ["ремонта", "ta'mirlash", "repair", "needs"]):
         return "требует ремонта/ta'mirga muhtoj"
         
     return html.quote(condition.lower())
@@ -50,13 +50,13 @@ async def approve_ad(call: CallbackQuery):
     # Форматируем цену: 150.000
     formatted_price = f"{int(ad.price):,}".replace(",", ".")
 
-    # Состояние на двух языках
+    # Состояние на двух языках (RU/UZ)
     bil_condition = get_bilingual_condition(ad.condition)
     
-    # Экранируем данные пользователя для безопасности HTML
+    # Экранируем название
     safe_title = html.quote(ad.title)
 
-    # СОЗДАЕМ ТЕКСТ ТОЧНО ПО ПРИМЕРУ (как на фото Гарри Поттера)
+    # СОЗДАЕМ ТЕКСТ ПО ВАШЕМУ ПРИМЕРУ (как на фото)
     desc_channel = (
         f"<b>{safe_title}</b>\n\n"
         f"<b>Цена/нархи:</b>\n"
@@ -64,12 +64,12 @@ async def approve_ad(call: CallbackQuery):
         f"<b>Состояние/холати: {bil_condition}</b> ✅\n\n"
     )
 
-    # Размер добавляем если он есть
+    # Добавляем размер, если указан
     if ad.size and ad.size != "---":
         safe_size = html.quote(ad.size)
         desc_channel += f"<b>Размер/ольчами: {safe_size}</b> 📏\n\n"
 
-    # Ссылка на админа (используем тире для безопасности парсинга)
+    # Ссылка на админа (используем тире для безопасности HTML)
     desc_channel += f"@buyursin_admin — Для заказа/заказ килиш учун 🫶"
 
     photos = ad.photos.split(",") if ad.photos else []
@@ -96,7 +96,7 @@ async def approve_ad(call: CallbackQuery):
         await call.answer("Успешно опубликовано!")
 
     except Exception as e:
-        await call.answer(f"Ошибка: {str(e)}", show_alert=True)
+        await call.answer(f"Ошибка публикации: {str(e)}", show_alert=True)
 
 
 @router.callback_query(F.data.startswith("reject_"))
