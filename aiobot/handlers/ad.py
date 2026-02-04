@@ -1,7 +1,7 @@
 import re
 import asyncio
 from aiogram import Router, F
-from aiogram.types import Message, InputMediaPhoto, CallbackQuery, ReplyKeyboardRemove
+from aiogram.types import Message, InputMediaPhoto, CallbackQuery, ReplyKeyboardRemove, ReplyKeyboardMarkup, KeyboardButton
 from aiogram.fsm.context import FSMContext
 from aiogram.utils.markdown import hlink
 from aiobot.buttons.keyboards.reply import main_keyboard, lang_keyboard, photos_keyboard, condition_keyboard
@@ -16,24 +16,38 @@ from aiobot.servise.getifromimg import ai_analyze_category
 router = Router()
 media_groups_cache = {}
 
-# --- Функция обработки цены (чтобы 1.000 было как 1000) ---
+# --- ВСПОМОГАТЕЛЬНЫЕ КЛАВИАТУРЫ И ФУНКЦИИ ---
+
+def size_choice_keyboard(lang):
+    """Клавиатура выбора: Есть размер или Нет"""
+    texts = {
+        "ru": ["Есть размер", "Нет размера"],
+        "uz": ["O'lcham bor", "O'lcham yo'q"],
+        "en": ["Has size", "No size"]
+    }
+    btns = texts.get(lang, texts["ru"])
+    return ReplyKeyboardMarkup(
+        keyboard=[[KeyboardButton(text=btns[0]), KeyboardButton(text=btns[1])]],
+        resize_keyboard=True
+    )
+
 def parse_price(text: str) -> int:
+    """Обработка цены: 1.000 -> 1000, 1.5k -> 1500"""
     text = text.lower().strip().replace(" ", "")
-    # Проверяем суффикс "к" (тысячи)
     has_k = any(s in text for s in ["k", "к"])
-    # Убираем всё, кроме цифр и разделителей
+    # Убираем всё кроме цифр, точек и запятых
     clean_number = re.sub(r"[^0-9.,]", "", text)
     
     if has_k:
-        # Если есть "к", точка — это десятичный знак (1.5k -> 1500)
+        # Если есть 'k', точка — это десятичный разделитель (1.5k = 1500)
         clean_number = clean_number.replace(",", ".")
         return int(float(clean_number) * 1000)
     else:
-        # Если "к" нет, точка/запятая — это разделитель тысяч (1.000 -> 1000)
+        # Если 'k' нет, точка/запятая — это разделитель тысяч (1.000 = 1000)
         clean_number = clean_number.replace(".", "").replace(",", "")
         return int(clean_number)
 
-# --- ХЕНДЛЕРЫ ---
+# --- ОСНОВНЫЕ ХЕНДЛЕРЫ ---
 
 @router.message(F.text.in_([TEXTS["add_ad"]["ru"], TEXTS["add_ad"]["uz"], TEXTS["add_ad"]["en"]]))
 async def add_ad_start(message: Message, state: FSMContext):
@@ -59,14 +73,12 @@ async def ad_photos_step(message: Message, state: FSMContext):
             for p_id in ids:
                 if len(photos) < 10: photos.append(p_id)
             await state.update_data(photos=photos)
-            await message.answer(f"✅ Фото добавлено. Всего: {len(photos)}/10.")
+            await message.answer(f"✅ Фото добавлено ({len(photos)}/10).")
     else:
         if len(photos) < 10:
             photos.append(message.photo[-1].file_id)
             await state.update_data(photos=photos)
             await message.answer(f"✅ Фото добавлено ({len(photos)}/10).")
-        else:
-            await message.answer("❌ Максимум 10 фото.")
 
 @router.message(AdForm.photos, F.text)
 async def photos_ready(message: Message, state: FSMContext):
@@ -78,9 +90,7 @@ async def photos_ready(message: Message, state: FSMContext):
         if not photos: return await message.answer("❌ " + TEXTS["ad_photos"][lang])
         
         predicted = await ai_analyze_category(photos[0], message.bot, "Одежда, Обувь, Аксессуары")
-        if predicted not in ["Одежда", "Обувь", "Аксессуары"]: predicted = "Одежда"
-        
-        await state.update_data(size_category=predicted)
+        await state.update_data(size_category=predicted if predicted in ["Одежда", "Обувь", "Аксессуары"] else "Одежда")
         await message.answer(TEXTS["ad_price"][lang], reply_markup=ReplyKeyboardRemove())
         await state.set_state(AdForm.price)
 
@@ -92,40 +102,65 @@ async def ad_price_step(message: Message, state: FSMContext):
         await state.update_data(price=price)
         await message.answer(TEXTS["ad_title"][user.lang])
         await state.set_state(AdForm.title)
-    except Exception:
-        errors = {"ru": "❌ Введите цену цифрами.", "uz": "❌ Narxni raqamda kiriting.", "en": "❌ Enter price in numbers."}
-        await message.answer(errors.get(user.lang, errors["ru"]))
+    except:
+        await message.answer("❌ Введите цену цифрами.")
 
 @router.message(AdForm.title, F.text)
 async def ad_title_step(message: Message, state: FSMContext):
     await state.update_data(title=message.text)
     user = await Users.get(user_id=message.from_user.id)
-    await message.answer(TEXTS["ad_size"][user.lang], reply_markup=ReplyKeyboardRemove())
+    await message.answer("📏 Укажите наличие размера:", reply_markup=size_choice_keyboard(user.lang))
     await state.set_state(AdForm.size)
 
 @router.message(AdForm.size, F.text)
-async def ad_size_step(message: Message, state: FSMContext):
-    await state.update_data(size=message.text)
+async def ad_size_choice_logic(message: Message, state: FSMContext):
     user = await Users.get(user_id=message.from_user.id)
-    await message.answer(TEXTS["ad_condition"][user.lang], reply_markup=condition_keyboard(user.lang))
-    await state.set_state(AdForm.condition)
+    lang = user.lang
+    text = message.text
+    
+    # Списки текстов кнопок
+    yes_btns = ["Есть размер", "O'lcham bor", "Has size"]
+    no_btns = ["Нет размера", "O'lcham yo'q", "No size"]
+
+    if text in yes_btns:
+        await message.answer("📝 Введите размер (например: XL, 42 или 27.5):", reply_markup=ReplyKeyboardRemove())
+        await state.update_data(waiting_size_text=True)
+    elif text in no_btns:
+        await state.update_data(size=None) # Размера не будет
+        await message.answer(TEXTS["ad_condition"][lang], reply_markup=condition_keyboard(lang))
+        await state.set_state(AdForm.condition)
+    else:
+        # Если пользователь вводит сам текст размера
+        data = await state.get_data()
+        if data.get("waiting_size_text"):
+            await state.update_data(size=text, waiting_size_text=False)
+            await message.answer(TEXTS["ad_condition"][lang], reply_markup=condition_keyboard(lang))
+            await state.set_state(AdForm.condition)
+        else:
+            await message.answer("Пожалуйста, используйте кнопки.")
 
 @router.message(AdForm.condition, F.text)
 async def ad_condition_step(message: Message, state: FSMContext):
     user = await Users.get(user_id=message.from_user.id)
     lang = user.lang
-    # Пропускаем дефекты
+    # Записываем состояние и пропускаем дефекты (сразу ставим "Нет")
     await state.update_data(condition=message.text.strip(), defect="Нет")
     data = await state.get_data()
 
     formatted_price = f"{int(data.get('price', 0)):,}".replace(",", " ")
+    
+    # Проверка: есть ли размер для отображения
+    size_val = data.get('size')
+    size_line = f"📏 {TEXTS['field_size'][lang]}: {size_val}\n" if size_val else ""
+
     ad_text = (
         f"{TEXTS['confirm_header'][lang]}\n\n"
         f"📌 {TEXTS['field_title'][lang]}: {data.get('title', '---')}\n"
         f"💰 {TEXTS['field_price'][lang]}: {formatted_price} UZS\n"
-        f"📏 {TEXTS['field_size'][lang]}: {data.get('size', '---')}\n"
+        f"{size_line}"
         f"⚡ {TEXTS['field_condition'][lang]}: {data.get('condition', '---')}\n"
     )
+    
     photos = data.get("photos", [])
     if photos:
         media = [InputMediaPhoto(media=photos[0], caption=ad_text, parse_mode="Markdown")]
@@ -133,6 +168,7 @@ async def ad_condition_step(message: Message, state: FSMContext):
         await message.answer_media_group(media=media)
     else:
         await message.answer(ad_text, parse_mode="Markdown")
+    
     await message.answer(TEXTS["confirm_msg"][lang], reply_markup=user_confirm_keyboard(lang))
     await state.set_state(AdForm.confirm)
 
@@ -145,11 +181,11 @@ async def ad_confirm_and_save(callback: CallbackQuery, state: FSMContext):
             user_id=callback.from_user.id,
             title=data['title'],
             price=float(data['price']),
-            size=data['size'],
+            size=data.get('size') or "---", # В базу пишем прочерк если пусто
             condition=data['condition'],
             photos=",".join(data.get("photos", [])),
             category=data.get('size_category'),
-            defect_info=data.get('defect'),
+            defect_info="Нет",
             status='pending'
         )
         try: await callback.message.delete()
@@ -157,24 +193,29 @@ async def ad_confirm_and_save(callback: CallbackQuery, state: FSMContext):
         await callback.message.answer("✅ Отправлено на модерацию!", reply_markup=main_keyboard(user.lang))
         await send_to_admin_group(new_ad, user, data)
         await state.clear()
-    except Exception:
-        await callback.answer("❌ Ошибка при сохранении.", show_alert=True)
+    except Exception as e:
+        print(f"Ошибка сохранения: {e}")
+        await callback.answer("❌ Ошибка при сохранении.")
     await callback.answer()
 
 async def send_to_admin_group(ad, user, data):
     formatted_price = f"{int(ad.price):,}".replace(",", " ")
+    # Получаем телефон из модели Users (поле phone_number)
     user_phone = getattr(user, 'phone_number', 'Нет номера')
     
-    # Объединили Имя и Телефон в строке "От:"
+    # Размер для админа: если его нет, строка не создается
+    size_line = f"📏 Размер: {ad.size}\n" if ad.size and ad.size != "---" else ""
+
     admin_text = (
         f"🆕 <b>ОБЪЯВЛЕНИЕ #{ad.pk}</b>\n\n"
         f"👤 От: {hlink(user.full_name, f'tg://user?id={user.user_id}')} (<code>{user_phone}</code>)\n"
         f"📌 Категория: {ad.category}\n"
         f"🏷 Название: {ad.title}\n"
         f"💰 Цена: {formatted_price} UZS\n"
-        f"📏 Размер: {ad.size}\n"
+        f"{size_line}"
         f"⚡ Состояние: {ad.condition}\n"
     )
+    
     photos = data.get("photos", [])
     if photos:
         media = [InputMediaPhoto(media=photos[0], caption=admin_text, parse_mode="HTML")]
