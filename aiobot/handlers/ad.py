@@ -123,7 +123,7 @@ async def ad_size_choice_logic(message: Message, state: FSMContext):
     no_btns = ["Нет размера", "O'lcham yo'q", "No size"]
 
     if text in yes_btns:
-        await message.answer("📝 Введите размер (например: XL, 42 или 27.5):", reply_markup=ReplyKeyboardRemove())
+        await message.answer("Введите размер (например: XL, 42 или 27.5):", reply_markup=ReplyKeyboardRemove())
         await state.update_data(waiting_size_text=True)
     elif text in no_btns:
         await state.update_data(size=None) # Размера не будет
@@ -155,10 +155,10 @@ async def ad_condition_step(message: Message, state: FSMContext):
 
     ad_text = (
         f"{TEXTS['confirm_header'][lang]}\n\n"
-        f"📌 {TEXTS['field_title'][lang]}: {data.get('title', '---')}\n"
-        f"💰 {TEXTS['field_price'][lang]}: {formatted_price} UZS\n"
+        f"{TEXTS['field_title'][lang]}: {data.get('title', '---')}\n"
+        f"{TEXTS['field_price'][lang]}: {formatted_price} UZS\n"
         f"{size_line}"
-        f"⚡ {TEXTS['field_condition'][lang]}: {data.get('condition', '---')}\n"
+        f"{TEXTS['field_condition'][lang]}: {data.get('condition', '---')}\n"
     )
     
     photos = data.get("photos", [])
@@ -207,12 +207,12 @@ async def send_to_admin_group(ad, user, data):
     size_line = f"📏 Размер: {ad.size}\n" if ad.size and ad.size != "---" else ""
 
     admin_text = (
-        f"🆕 <b>ОБЪЯВЛЕНИЕ #{ad.pk}</b>\n\n"
-        f"👤 От: {hlink(user.full_name, f'tg://user?id={user.user_id}')} (<code>{user_phone}</code>)\n"
-        f"🏷 Название: {ad.title}\n"
-        f"💰 Цена: {formatted_price} UZS\n"
+        f"<b>ОБЪЯВЛЕНИЕ #{ad.pk}</b>\n\n"
+        f"От: {hlink(user.full_name, f'tg://user?id={user.user_id}')} (<code>{user_phone}</code>)\n"
+        f"Название: {ad.title}\n"
+        f"Цена: {formatted_price} UZS\n"
         f"{size_line}"
-        f"⚡ Состояние: {ad.condition}\n"
+        f" Состояние: {ad.condition}\n"
     )
     
     photos = data.get("photos", [])
@@ -229,6 +229,6 @@ async def ad_cancel(callback: CallbackQuery, state: FSMContext):
     user = await Users.get(user_id=callback.from_user.id)
     try: await callback.message.delete()
     except: pass
-    await callback.message.answer("❌ Отменено", reply_markup=main_keyboard(user.lang))
+    await callback.message.answer("Отменено", reply_markup=main_keyboard(user.lang))
     await state.clear()
     await callback.answer()
