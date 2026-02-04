@@ -209,7 +209,6 @@ async def send_to_admin_group(ad, user, data):
     admin_text = (
         f"🆕 <b>ОБЪЯВЛЕНИЕ #{ad.pk}</b>\n\n"
         f"👤 От: {hlink(user.full_name, f'tg://user?id={user.user_id}')} (<code>{user_phone}</code>)\n"
-        f"📌 Категория: {ad.category}\n"
         f"🏷 Название: {ad.title}\n"
         f"💰 Цена: {formatted_price} UZS\n"
         f"{size_line}"
