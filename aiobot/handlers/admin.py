@@ -1,6 +1,6 @@
 import sys
 from aiogram import Router, F, html
-from aiogram.types import CallbackQuery, InputMediaPhoto, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import CallbackQuery, InputMediaPhoto
 from aiobot.models.ads import Ads
 from aiobot.models.users import Users
 from aiobot.texts import TEXTS
@@ -9,20 +9,20 @@ from config import CHANNEL_ID
 router = Router()
 
 def get_bilingual_condition(condition: str) -> str:
-    """Функция для перевода состояния на два языка одновременно"""
+    """Перевод состояния на два языка одновременно, как на фото"""
     mapping = {
-        "Yangi": "НОВОЕ / YANGI",
-        "Ideal": "ИДЕАЛЬНОЕ / IDEAL",
-        "Yaxshi": "ХОРОШЕЕ / YAXSHI",
-        "O'rtacha": "СРЕДНЕЕ / O'RTACHA",
-        "Новый": "НОВОЕ / YANGI",
-        "Новое": "НОВОЕ / YANGI",
-        "Идеальное": "ИДЕАЛЬНОЕ / IDEAL",
-        "Хорошее": "ХОРОШЕЕ / YAXSHI",
-        "Среднее": "СРЕДНЕЕ / O'RTACHA",
-        "Б/у": "Б/У / ISHLATILGAN"
+        "Yangi": "новые/янги",
+        "Ideal": "идеальное/ideal",
+        "Yaxshi": "хорошее/yaxshi",
+        "O'rtacha": "среднее/o'rtacha",
+        "Новый": "новые/янги",
+        "Новое": "новые/янги",
+        "Идеальное": "идеальное/ideal",
+        "Хорошее": "хорошее/yaxshi",
+        "Среднее": "среднее/o'rtacha",
+        "Б/у": "б/у / ishlatilgan"
     }
-    return mapping.get(condition, condition.upper())
+    return mapping.get(condition, condition.lower())
 
 @router.callback_query(F.data.startswith("approve_"))
 async def approve_ad(call: CallbackQuery):
@@ -34,67 +34,51 @@ async def approve_ad(call: CallbackQuery):
     
     user = await Users.get(ad.user_id)
     lang = user.lang if user else "ru"
-    formatted_price = f"{int(ad.price):,}".replace(",", " ")
+    
+    # Форматируем цену с точкой (15.000)
+    formatted_price = f"{int(ad.price):,}".replace(",", ".")
 
-    # Состояние на двух языках
+    # Получаем состояние (новые/янги)
     bil_condition = get_bilingual_condition(ad.condition)
 
-    # ФОРМИРУЕМ ТЕКСТ СТРОГО ПО ВАШЕМУ ПРИМЕРУ (Жирный текст, без эмодзи)
+    # СОЗДАЕМ ТЕКСТ ТОЧНО ПО ПРИМЕРУ С ФОТО
     desc_channel = (
-        f"<b>Новое объявление:</b>\n\n"
-        f"<b>Название:</b> <b>{ad.title}</b>\n\n"
-        f"<b>Цена:</b> <b>{formatted_price} UZS</b>\n\n"
+        f"<b>{ad.title}</b>\n\n" # Название (и эмодзи если пользователь сам ввел)
+        f"<b>Цена/нархи:</b>\n"
+        f"<b>всего {formatted_price} сум</b> 🔥‼️\n\n"
+        f"<b>Состояние/холати: {bil_condition}</b> ✅\n\n"
     )
 
-    # Добавляем размер, если он указан
+    # Если есть размер, добавляем его тоже красиво
     if ad.size and ad.size != "---":
-        desc_channel += f"<b>Размер:</b> <b>{ad.size}</b>\n\n"
+        desc_channel += f"<b>Размер/ольчами: {ad.size}</b> 📏\n\n"
 
-    desc_channel += (
-        f"<b>Состояние:</b> <b>{bil_condition}</b>\n\n"
-        f"<b>Чтобы купить нажмите кнопку ниже.</b>"
-    )
-
-    # Кнопка Купить
-    buy_kb = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="Купить", url="https://t.me/buyursin_admin")]
-        ]
-    )
+    # Ссылка на админа в конце как на фото
+    desc_channel += f"@buyursin_admin <- Для заказа/заказ килиш учун 🫶"
 
     photos = ad.photos.split(",") if ad.photos else []
 
     try:
         if photos:
             media = []
-            for pid in photos:
-                media.append(InputMediaPhoto(media=pid))
+            for i, pid in enumerate(photos):
+                if i == 0:
+                    # Весь текст идет как подпись к первой картинке
+                    media.append(InputMediaPhoto(media=pid, caption=desc_channel, parse_mode="HTML"))
+                else:
+                    media.append(InputMediaPhoto(media=pid))
             
-            # Сначала отправляем альбом с фото
             await call.bot.send_media_group(chat_id=CHANNEL_ID, media=media)
-            
-            # Затем отправляем текст с кнопкой (так как в альбомах кнопки не работают)
-            await call.bot.send_message(
-                chat_id=CHANNEL_ID, 
-                text=desc_channel, 
-                reply_markup=buy_kb, 
-                parse_mode="HTML"
-            )
         else:
-            await call.bot.send_message(
-                chat_id=CHANNEL_ID, 
-                text=desc_channel, 
-                reply_markup=buy_kb, 
-                parse_mode="HTML"
-            )
+            await call.bot.send_message(chat_id=CHANNEL_ID, text=desc_channel, parse_mode="HTML")
         
         await Ads.update_status(pk, "approved")
         await call.message.edit_reply_markup(reply_markup=None)
         
-        # Уведомление пользователю
-        success_msg = {"ru": "Объявление опубликовано!", "uz": "E'lon chop etildi!", "en": "Ad published!"}
+        # Уведомление автору
+        success_msg = {"ru": "Объявление опубликовано!", "uz": "E'lon chop etildi!"}
         await call.bot.send_message(ad.user_id, success_msg.get(lang, success_msg["ru"]))
-        await call.answer("Опубликовано!")
+        await call.answer("Успешно опубликовано!")
 
     except Exception as e:
         await call.answer(f"Ошибка: {e}", show_alert=True)
@@ -115,6 +99,6 @@ async def reject_ad(call: CallbackQuery):
         await call.message.edit_text(text=f"<b>ОТКЛОНЕНО</b>\n\n{call.message.text}", parse_mode="HTML")
     except: pass
 
-    fail_msg = {"ru": "Объявление отклонено.", "uz": "E'lon rad etildi.", "en": "Ad rejected."}
+    fail_msg = {"ru": "Объявление отклонено.", "uz": "E'lon rad etildi!"}
     await call.bot.send_message(ad.user_id, fail_msg.get(lang, fail_msg["ru"]))
     await call.answer("Отклонено")
