@@ -9,7 +9,7 @@ from config import CHANNEL_ID
 router = Router()
 
 def get_bilingual_condition(condition: str) -> str:
-    """Перевод состояния на два языка одновременно, как на фото"""
+    """Перевод состояния на два языка одновременно"""
     mapping = {
         "Yangi": "новые/янги",
         "Ideal": "идеальное/ideal",
@@ -22,7 +22,9 @@ def get_bilingual_condition(condition: str) -> str:
         "Среднее": "среднее/o'rtacha",
         "Б/у": "б/у / ishlatilgan"
     }
-    return mapping.get(condition, condition.lower())
+    # Возвращаем в нижнем регистре, как на фото
+    res = mapping.get(condition, condition.lower())
+    return html.quote(res)
 
 @router.callback_query(F.data.startswith("approve_"))
 async def approve_ad(call: CallbackQuery):
@@ -38,23 +40,26 @@ async def approve_ad(call: CallbackQuery):
     # Форматируем цену с точкой (15.000)
     formatted_price = f"{int(ad.price):,}".replace(",", ".")
 
-    # Получаем состояние (новые/янги)
+    # Получаем состояние (новые/янги) и экранируем
     bil_condition = get_bilingual_condition(ad.condition)
+    
+    # Экранируем название, чтобы знаки < > не ломали код
+    safe_title = html.quote(ad.title)
 
-    # СОЗДАЕМ ТЕКСТ ТОЧНО ПО ПРИМЕРУ С ФОТО
+    # СОЗДАЕМ ТЕКСТ (Исправлена ошибка с символом < )
     desc_channel = (
-        f"<b>{ad.title}</b>\n\n" # Название (и эмодзи если пользователь сам ввел)
+        f"<b>{safe_title}</b>\n\n"
         f"<b>Цена/нархи:</b>\n"
         f"<b>всего {formatted_price} сум</b> 🔥‼️\n\n"
         f"<b>Состояние/холати: {bil_condition}</b> ✅\n\n"
     )
 
-    # Если есть размер, добавляем его тоже красиво
     if ad.size and ad.size != "---":
-        desc_channel += f"<b>Размер/ольчами: {ad.size}</b> 📏\n\n"
+        safe_size = html.quote(ad.size)
+        desc_channel += f"<b>Размер/ольчами: {safe_size}</b> 📏\n\n"
 
-    # Ссылка на админа в конце как на фото
-    desc_channel += f"@buyursin_admin <- Для заказа/заказ килиш учун 🫶"
+    # Заменил <- на - чтобы не было ошибки парсинга HTML
+    desc_channel += f"@buyursin_admin — Для заказа/заказ килиш учун 🫶"
 
     photos = ad.photos.split(",") if ad.photos else []
 
@@ -63,7 +68,6 @@ async def approve_ad(call: CallbackQuery):
             media = []
             for i, pid in enumerate(photos):
                 if i == 0:
-                    # Весь текст идет как подпись к первой картинке
                     media.append(InputMediaPhoto(media=pid, caption=desc_channel, parse_mode="HTML"))
                 else:
                     media.append(InputMediaPhoto(media=pid))
@@ -75,13 +79,13 @@ async def approve_ad(call: CallbackQuery):
         await Ads.update_status(pk, "approved")
         await call.message.edit_reply_markup(reply_markup=None)
         
-        # Уведомление автору
         success_msg = {"ru": "Объявление опубликовано!", "uz": "E'lon chop etildi!"}
         await call.bot.send_message(ad.user_id, success_msg.get(lang, success_msg["ru"]))
         await call.answer("Успешно опубликовано!")
 
     except Exception as e:
-        await call.answer(f"Ошибка: {e}", show_alert=True)
+        # Если снова будет ошибка, мы увидим её в алерте
+        await call.answer(f"Ошибка Telegram: {str(e)}", show_alert=True)
 
 
 @router.callback_query(F.data.startswith("reject_"))
