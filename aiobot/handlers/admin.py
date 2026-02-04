@@ -70,7 +70,7 @@ async def approve_ad(call: CallbackQuery):
         desc_channel += f"<b>Размер/ольчами: {safe_size}</b> 📏\n\n"
 
     # Ссылка на админа (используем тире для безопасности HTML)
-    desc_channel += f"@buyursin_admin — Для заказа/заказ килиш учун 🫶"
+    desc_channel += f"@Buyursinuz_bot — Для заказа/заказ килиш учун 🫶"
 
     photos = ad.photos.split(",") if ad.photos else []
 
